@@ -27,6 +27,7 @@ func watchKey(key string, index uint64) (string, uint64) {
 	if kvp != nil {
 		return string(kvp.Value), meta.LastIndex
 	} else {
-		return "", 0
+		// handle the case where the key doesn't exist
+		return "false", 0
 	}
 }

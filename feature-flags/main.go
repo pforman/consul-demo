@@ -11,6 +11,15 @@ import (
 
 var version = "0.0.1"
 
+func signalHandler(sigs chan os.Signal, done chan bool, httpAddr string) {
+	for _ = range sigs {
+		fmt.Println("\nReceived an interrupt, deregistering services...\n")
+		deRegisterService("demo", httpAddr)
+		os.Exit(0)
+		done <- true
+	}
+}
+
 func main() {
 	log.Println("Starting kv-sr demo...")
 
@@ -28,40 +37,46 @@ func main() {
 	log.Printf("Registering with consul as %s", httpAddr)
 	registerService("demo", httpAddr)
 
-	// Some channel madness for watching KV stuff
-
 	// Set up some signal handling here
 	sigs := make(chan os.Signal, 1)
-	done := make(chan bool)
+	signalHandlerDone := make(chan bool)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go signalHandler(sigs, signalHandlerDone, httpAddr)
+
+	// Go find the initial flag value
+	magic, index := watchKey("/flags/magic", 0)
+
+	// Keep watching for updates to the magic flag
+	// This is a blocking query, so it's cheap.
 	go func() {
-		for _ = range sigs {
-			fmt.Println("\nReceived an interrupt, deregistering services...\n")
-			deRegisterService("demo", httpAddr)
-			os.Exit(0)
-			done <- true
+		for {
+			magic, index = watchKey("/flags/magic", index)
 		}
 	}()
 
-	//magic := "who knows"
-	//var index uint64 = 0
-	magic, index := watchKey("/flags/magic", 0)
-
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		//magic := getKey("/flags/magic")
-		//log.Printf("HTTP trying to serve %s", magic)
-		m2 := magic
-		fmt.Fprintf(w, html, m2, hostname, version)
+		// optimized out without this?
+		mymagic := magic
+		log.Printf("HTTP trying to serve %s and %d", mymagic, index)
+		if magic != "true" {
+			fmt.Fprintf(w, html, mymagic, hostname, version)
+		} else {
+			fmt.Fprintf(w, htmltrue)
+		}
 	})
 
-	http.HandleFunc("/update", func(w http.ResponseWriter, r *http.Request) {
-		magic, index = watchKey("/flags/magic", 0)
-		log.Printf("updating magic to %s at index %d", magic, index)
-		fmt.Fprintf(w, "<html>cool story bro</html>")
-	})
+	/*
+		http.HandleFunc("/update", func(w http.ResponseWriter, r *http.Request) {
+			magic, index = watchKey("/flags/magic", 0)
+			log.Printf("updating magic to %s at index %d", magic, index)
+			fmt.Fprintf(w, "<html>cool story bro</html>")
+		})
+	*/
 
 	log.Printf("HTTP service listening on %s", httpAddr)
 	http.ListenAndServe(httpAddr, nil)
-	<-done
+
+	// wait for cleanup, we deregister with this hook
+	<-signalHandlerDone
 
 }

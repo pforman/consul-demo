@@ -7,3 +7,8 @@ var html = `
   <p>Hostname: %s; Version: %s</p>
 </html>
 `
+var htmltrue = `
+<html>
+  <img src="http://i.imgur.com/YsbKHg1.gif" />
+</html>
+`
