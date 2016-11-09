@@ -61,9 +61,9 @@ func getKey(key string) string {
 	// Get a handle to the KV API
 	kv := client.KV()
 
-	// GET a new KV pair
-	//p := &api.KVPair{Key: key}
-	kvp, _, err := kv.Get(key, nil)
+	// GET a new KV pair, wake up every 37s
+	q := &api.QueryOptions{WaitTime: 37}
+	kvp, _, err := kv.Get(key, q)
 	if err != nil {
 		panic(err)
 	}

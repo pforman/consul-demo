@@ -45,16 +45,30 @@ func main() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go signalHandler(sigs, signalHandlerDone, httpAddr, sid)
 
-	// Go find the initial flag value
-	magic, index := watchKey("/flags/magic", 0)
+	// Go find the current index value
+	_, index := watchKey("service/demo/leader", 0, 0)
 
 	isLeader := acquireLock(sid, "service/demo/leader", httpAddr)
 	log.Printf("sid is %s, leader is %b", sid, isLeader)
-	// Keep watching for updates to the magic flag
-	// This is a blocking query, so it's cheap.
+
+	// Keep watching for updates to the lock
+	// This is a blocking query, so it's cheapish.
 	go func() {
 		for {
-			magic, index = watchKey("/flags/magic", index)
+			// TODO: need to put bounds in here to wake up
+			// and renew the session
+			_, index = watchKey("service/demo/leader", index, 30)
+			log.Printf("woke up, checking the lock")
+			if !isLeader {
+				log.Printf(" not leader, trying to acquire the lock")
+				isLeader = acquireLock(sid, "service/demo/leader", httpAddr)
+				if isLeader {
+					log.Printf("acquired lock.  now what?")
+				}
+
+			}
+			sid = renewSession(sid)
+			log.Printf("sid is %s, index is %d, leader is %t", sid, index, isLeader)
 		}
 	}()
 
@@ -65,13 +79,15 @@ func main() {
 		fmt.Fprintf(w, html, leading, hostname, version)
 	})
 
-	/*
-		http.HandleFunc("/update", func(w http.ResponseWriter, r *http.Request) {
-			magic, index = watchKey("/flags/magic", 0)
-			log.Printf("updating magic to %s at index %d", magic, index)
-			fmt.Fprintf(w, "<html>cool story bro</html>")
-		})
-	*/
+	http.HandleFunc("/release", func(w http.ResponseWriter, r *http.Request) {
+		if releaseLock(sid, "service/demo/leader") {
+			log.Printf("releasing lock from sid %s", sid)
+			isLeader = false
+		} else {
+			fmt.Printf("trying to release lock when we aren't leader, whoops")
+		}
+		fmt.Fprintf(w, "<html>cool story bro</html>")
+	})
 
 	log.Printf("HTTP service listening on %s", httpAddr)
 	http.ListenAndServe(httpAddr, nil)

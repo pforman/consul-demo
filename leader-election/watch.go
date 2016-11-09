@@ -2,11 +2,12 @@ package main
 
 import (
 	//"fmt"
+	"time"
 
 	"github.com/hashicorp/consul/api"
 )
 
-func watchKey(key string, index uint64) (string, uint64) {
+func watchKey(key string, index uint64, wait int) (string, uint64) {
 	// Get a new client
 	c := api.DefaultConfig()
 	c.Address = "consul:8500"
@@ -18,7 +19,8 @@ func watchKey(key string, index uint64) (string, uint64) {
 	// Get a handle to the KV API
 	kv := client.KV()
 
-	q := &api.QueryOptions{WaitIndex: index}
+	wt := time.Duration(wait) * time.Second
+	q := &api.QueryOptions{WaitIndex: index, WaitTime: wt}
 	// GET a new KV pair
 	kvp, meta, err := kv.Get(key, q)
 	if err != nil {
