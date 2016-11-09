@@ -43,7 +43,10 @@ func main() {
 		}
 	}()
 
-	magic := "who knows"
+	//magic := "who knows"
+	//var index uint64 = 0
+	magic, index := watchKey("/flags/magic", 0)
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		//magic := getKey("/flags/magic")
 		//log.Printf("HTTP trying to serve %s", magic)
@@ -52,8 +55,8 @@ func main() {
 	})
 
 	http.HandleFunc("/update", func(w http.ResponseWriter, r *http.Request) {
-		magic = getKey("/flags/magic")
-		log.Printf("updating magic to %s", magic)
+		magic, index = watchKey("/flags/magic", 0)
+		log.Printf("updating magic to %s at index %d", magic, index)
 		fmt.Fprintf(w, "<html>cool story bro</html>")
 	})
 
