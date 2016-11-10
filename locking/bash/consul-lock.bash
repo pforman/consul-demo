@@ -2,6 +2,13 @@
 
 set -e
 host=$(hostname)
+
+unlock ()
+{
+  consul-cli --consul consul:8500 kv unlock service/demo/worklock --session $1
+  cp /tmp/unlocked /var/www/html/index.nginx-debian.html
+}
+
 cat >/tmp/locked<<EOF
 <html>
   <body bgcolor="#aa0000">
@@ -26,7 +33,8 @@ echo "here we go!"
 # Start with the unlock page instead of the Nginx default
 cp /tmp/unlocked /var/www/html/index.nginx-debian.html
 while true; do
-  sid=$(consul-cli --consul consul:8500 kv lock service/demo/worklock --lock-delay 1s)
+  sid=$(consul-cli --consul consul:8500 kv lock service/demo/worklock --lock-delay 0)
+  trap "unlock $sid; echo exiting on signal; exit" SIGINT SIGTERM
   echo =====================================
   echo =====================================
   echo "look at that, I got the lock!"
@@ -38,11 +46,15 @@ while true; do
     sleep 1
   done
   
-  consul-cli --consul consul:8500 kv unlock service/demo/worklock --session $sid
-  cp /tmp/unlocked /var/www/html/index.nginx-debian.html
+  #consul-cli --consul consul:8500 kv unlock service/demo/worklock --session $sid
+  #cp /tmp/unlocked /var/www/html/index.nginx-debian.html
+  unlock $sid
   s=$RANDOM
   let "s %= 5"
   let "s += 5"
   echo "released the lock, snoozing $s"
   sleep $s
 done
+
+
+  

@@ -72,7 +72,6 @@ func acquireLock(sid string, key string, value string) bool {
 		Value:   []byte(value),
 		Session: sid,
 	}
-	// GET a new KV pair
 	leader, _, err := kv.Acquire(kvp, nil)
 	if err != nil {
 		panic(err)
