@@ -30,3 +30,4 @@ For the most part, that should give you runnable containers.  Enjoy!
 
 ## Credits
 
+The basic webserver/html tiny app pattern (and implementation) was borrowed from Kelsey Hightower's spectacular demos, in particular [app-healthz](https://github.com/kelseyhightower/app-healthz).
