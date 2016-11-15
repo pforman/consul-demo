@@ -2,9 +2,8 @@
 
 This is some extremely sloppy example code for a talk given on 2016-11-15 with DevopsBoise.
 
-<div class="alert alert-success">
-Seriously don't use this for anything beyond basic concurrency examples
-</div>
+
+# Seriously, don't use this for anything beyond basic concurrency examples.
 
 There are six subcomponents here.
 
