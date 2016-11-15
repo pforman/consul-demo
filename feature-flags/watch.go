@@ -9,7 +9,7 @@ import (
 func watchKey(key string, index uint64) (string, uint64) {
 	// Get a new client
 	c := api.DefaultConfig()
-	c.Address = "consul:8500"
+	c.Address = consulAddr
 	client, err := api.NewClient(c)
 	if err != nil {
 		panic(err)

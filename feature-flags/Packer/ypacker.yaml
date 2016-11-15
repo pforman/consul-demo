@@ -1,0 +1,72 @@
+---
+# In order to run this, you need the ypack stuff in your path(this can be found
+# in ../bin.
+#
+#
+variables:
+  ami_name: pfvc-demo-programt
+  # centos 7 marketplace AMI
+  source_ami: ami-f2f52c92
+
+builders:
+- type: amazon-ebs
+  ami_name: '{{user `ami_name`}} {{isotime "2006-01-02 03-04-05 UTC" | clean_ami_name}}'
+  ami_users: '{{user `ami_users`}}'
+  access_key: '{{user `aws_access_key`}}'
+  secret_key: '{{user `aws_secret_key`}}'
+  region: us-west-2
+  source_ami: '{{user `source_ami`}}'
+  instance_type: t2.micro
+  ssh_username: centos
+  communicator: 'ssh'
+  ssh_pty: 'true'
+  vpc_id: '{{user `vpc_id`}}'
+  subnet_id: '{{user `subnet_id`}}'
+  security_group_id: '{{user `security_group_id`}}'
+  run_tags:
+    "bb:packer:TargetAMI": "{{user `ami_name`}}"
+
+
+provisioners:
+  # Yum update  -slooooooooow for testing.
+  #- type: shell
+  #  inline: yum update -y
+  #  execute_command: sudo -i -E -S sh '{{ .Path }}'
+
+  - type: file
+    source: ./feature-flags
+    destination: /tmp/feature-flags
+
+  - type: file
+    source: ./ff.service
+    destination: /tmp/ff.service
+
+  - type: file
+    source: ./web.json
+    destination: /tmp/web.json
+
+  - type: shell
+    inline: cp /tmp/feature-flags /usr/bin
+    execute_command: sudo -i -E -S sh '{{ .Path }}'
+
+  - type: shell
+    inline: cp /tmp/ff.service /etc/systemd/system
+    execute_command: sudo -i -E -S sh '{{ .Path }}'
+
+  - type: shell
+    inline: cp /tmp/web.json /etc/consul
+    execute_command: sudo -i -E -S sh '{{ .Path }}'
+
+  - type: shell
+    inline: chmod 755 /usr/bin/feature-flags
+    execute_command: sudo -i -E -S sh '{{ .Path }}'
+
+  - type: shell
+    inline: systemctl enable ff
+    execute_command: sudo -i -E -S sh '{{ .Path }}'
+
+  # Clean /tmp/
+  - type: shell
+    inline: rm -rf /tmp/
+    execute_command: sudo -i -E -S sh '{{ .Path }}'
+

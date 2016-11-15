@@ -1,0 +1,2 @@
+{"service": {"name": "demo", "tags": ["feature-flags"], "port": 80,
+  "check": {"script": "curl -sI localhost", "interval": "10s"}}}

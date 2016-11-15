@@ -9,7 +9,7 @@ import (
 func registerService(service, httpAddr string) {
 	// Get a new client
 	c := api.DefaultConfig()
-	c.Address = "consul:8500"
+	c.Address = consulAddr
 	client, err := api.NewClient(c)
 	if err != nil {
 		panic(err)
@@ -32,7 +32,7 @@ func registerService(service, httpAddr string) {
 func deRegisterService(service, httpAddr string) {
 	// Get a new client
 	c := api.DefaultConfig()
-	c.Address = "consul:8500"
+	c.Address = consulAddr
 	client, err := api.NewClient(c)
 	if err != nil {
 		panic(err)
@@ -52,7 +52,7 @@ func deRegisterService(service, httpAddr string) {
 func getKey(key string) string {
 	// Get a new client
 	c := api.DefaultConfig()
-	c.Address = "consul:8500"
+	c.Address = consulAddr
 	client, err := api.NewClient(c)
 	if err != nil {
 		panic(err)

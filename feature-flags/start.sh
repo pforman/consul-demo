@@ -11,6 +11,6 @@ fi
 for i in 0 1 2 3 4 5 ; do
   port="888$i"
   echo -n "started port $port - container "
-  docker run --link consul -d -p $port:80 --name $port feature-flags
+  docker run -e "CONSUL_ADDR=consul:8500" --link consul -d -p $port:80 --name $port feature-flags
 done
 

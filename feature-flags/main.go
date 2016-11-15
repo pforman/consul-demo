@@ -10,11 +10,12 @@ import (
 )
 
 var version = "0.0.1"
+var consulAddr = "localhost:8500"
 
-func signalHandler(sigs chan os.Signal, done chan bool, httpAddr string) {
+func signalHandler(sigs chan os.Signal, done chan bool, svcAddr string) {
 	for _ = range sigs {
 		fmt.Println("\nReceived an interrupt, deregistering services...\n")
-		deRegisterService("demo", httpAddr)
+		deRegisterService("demo", svcAddr)
 		os.Exit(0)
 		done <- true
 	}
@@ -28,20 +29,37 @@ func main() {
 		log.Fatal(err)
 	}
 
-	httpAddr := os.Getenv("HTTP_ADDR")
-	if httpAddr == "" {
-		httpAddr = fmt.Sprintf("%s:80", hostname)
-		log.Printf("using default host: %s ", httpAddr)
+	consulEnv := os.Getenv("CONSUL_ADDR")
+	if consulEnv != "" {
+		consulAddr = consulEnv
+		log.Printf("using environment for consul address: %s ", consulAddr)
 	}
 
-	log.Printf("Registering with consul as %s", httpAddr)
-	registerService("demo", httpAddr)
+	httpPort := os.Getenv("HTTP_PORT")
+	if httpPort == "" {
+		httpPort = "80"
+		log.Printf("using default port: %s ", httpPort)
+	}
+
+	svcAddr := os.Getenv("HTTP_ADDR")
+	if svcAddr == "" {
+		svcAddr = fmt.Sprintf("%s", hostname)
+		log.Printf("using default host: %s ", svcAddr)
+	}
+
+	svcAddr = fmt.Sprintf("%s:%s", svcAddr, httpPort)
+
+	// we want to listen everywhere
+	listenAddr := fmt.Sprintf("0.0.0.0:%s", httpPort)
+
+	log.Printf("Registering with consul as %s", svcAddr)
+	registerService("demo", svcAddr)
 
 	// Set up some signal handling here
 	sigs := make(chan os.Signal, 1)
 	signalHandlerDone := make(chan bool)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	go signalHandler(sigs, signalHandlerDone, httpAddr)
+	go signalHandler(sigs, signalHandlerDone, svcAddr)
 
 	// Go find the initial flag value
 	magic, index := watchKey("/flags/magic", 0)
@@ -73,8 +91,8 @@ func main() {
 		})
 	*/
 
-	log.Printf("HTTP service listening on %s", httpAddr)
-	http.ListenAndServe(httpAddr, nil)
+	log.Printf("HTTP service listening on %s", listenAddr)
+	http.ListenAndServe(listenAddr, nil)
 
 	// wait for cleanup, we deregister with this hook
 	<-signalHandlerDone

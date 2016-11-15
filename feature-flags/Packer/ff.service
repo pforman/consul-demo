@@ -1,0 +1,15 @@
+[Unit]
+Description=Demo of Feature Flags
+After=network-online.target
+Wants=network-online.target
+After=cloud-config.service consul.service
+Wants=cloud-config.service consul.service
+
+[Service]
+ExecStart=/usr/bin/feature-flags
+KillSignal=SIGINT
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
